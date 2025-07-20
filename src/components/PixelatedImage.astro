@@ -1,0 +1,242 @@
+---
+export interface Props {
+	src: string;
+	alt: string;
+}
+
+const { src, alt } = Astro.props;
+---
+
+<div class="image-container">
+	<img {src} {alt} class="hero-image" id="sourceImage" />
+	<canvas id="pixelCanvas"></canvas>
+	<div class="pixel-grid" id="pixelGrid"></div>
+</div>
+
+<style>
+	.image-container {
+		position: relative;
+		width: 200px;
+		height: 200px;
+		border-radius: 20px;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+		overflow: hidden;
+	}
+
+	.hero-image {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		opacity: 0;
+		position: absolute;
+		z-index: 1;
+	}
+
+	#pixelCanvas {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 2;
+		opacity: 0;
+	}
+
+	.pixel-grid {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 3;
+		display: grid;
+		gap: 1px;
+	}
+
+	.pixel {
+		background-color: #333;
+		transition: all 0.2s ease;
+		border-radius: 1px;
+		position: relative;
+		overflow: hidden;
+	}
+</style>
+
+<script>
+	const container = document.querySelector('.image-container') as HTMLElement;
+	const sourceImage = document.getElementById('sourceImage') as HTMLImageElement;
+	const canvas = document.getElementById('pixelCanvas') as HTMLCanvasElement;
+	const pixelGrid = document.getElementById('pixelGrid') as HTMLElement;
+
+	let pixelSize = 12; // Size of each individual pixel square
+	let gridWidth = 16; // 200px ÷ 12px = 16 cuadraditos
+	let gridHeight = 16; // 200px ÷ 12px = 16 cuadraditos
+	let pixels: HTMLElement[] = [];
+	let animationIntervals: Map<string, any> = new Map();
+
+	function getNeighbors(x: number, y: number): { x: number; y: number; distance: number }[] {
+		const neighbors: { x: number; y: number; distance: number }[] = [];
+
+		// Only get the 8 immediate neighbors (3x3 grid around the selected square)
+		for (let dy = -1; dy <= 1; dy++) {
+			for (let dx = -1; dx <= 1; dx++) {
+				const nx = x + dx;
+				const ny = y + dy;
+
+				// Check bounds and skip center pixel
+				if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight && !(dx === 0 && dy === 0)) {
+					const distance = Math.sqrt(dx * dx + dy * dy);
+					neighbors.push({ x: nx, y: ny, distance });
+				}
+			}
+		}
+
+		return neighbors;
+	}
+
+	function addHoverEffect(pixel: HTMLElement, x: number, y: number): void {
+		let isHovering = false;
+
+		pixel.addEventListener('mouseenter', () => {
+			isHovering = true;
+			const neighbors = getNeighbors(x, y);
+			const animationKey = `${x}-${y}`;
+
+			// Make the hovered square white
+			pixel.style.backgroundColor = 'rgb(255, 255, 255)';
+
+			// Get the original colors of the neighbors
+			const neighborColors = neighbors.map(({ x: nx, y: ny }) => {
+				const neighborPixel = pixels[ny * gridWidth + nx];
+				return neighborPixel.dataset.originalColor || 'rgb(128, 128, 128)';
+			});
+
+			// Clear any existing animation
+			if (animationIntervals.has(animationKey)) {
+				window.clearInterval(animationIntervals.get(animationKey)!);
+			}
+
+			const animateNeighbors = () => {
+				// Shuffle the colors
+				const shuffledColors = [...neighborColors].sort(() => Math.random() - 0.5);
+
+				// Apply shuffled colors to neighbors
+				neighbors.forEach(({ x: nx, y: ny }, index) => {
+					const neighborPixel = pixels[ny * gridWidth + nx];
+					if (neighborPixel) {
+						neighborPixel.style.backgroundColor = shuffledColors[index];
+					}
+				});
+			};
+
+			// Insta-start the animation
+			animateNeighbors();
+
+			const interval = window.setInterval(() => {
+				if (!isHovering) {
+					window.clearInterval(interval);
+					animationIntervals.delete(animationKey);
+					return;
+				}
+
+				animateNeighbors();
+			}, 100); // Fast interpolation every 100ms
+
+			animationIntervals.set(animationKey, interval);
+		});
+
+		pixel.addEventListener('mouseleave', () => {
+			isHovering = false;
+			const neighbors = getNeighbors(x, y);
+
+			// Restore the hovered square to original gray
+			const originalGray = pixel.dataset.originalGray || '128';
+			pixel.style.backgroundColor = `rgb(${originalGray}, ${originalGray}, ${originalGray})`;
+
+			// Restore original colors for neighbors
+			neighbors.forEach(({ x: nx, y: ny }) => {
+				const neighborPixel = pixels[ny * gridWidth + nx];
+				if (!neighborPixel) return;
+
+				const originalGray = neighborPixel.dataset.originalGray || '128';
+				neighborPixel.style.backgroundColor = `rgb(${originalGray}, ${originalGray}, ${originalGray})`;
+			});
+		});
+	}
+
+	function initializePixelGrid(): void {
+		if (!sourceImage || !canvas || !pixelGrid || !container) return;
+
+		// Set up canvas
+		canvas.width = 200;
+		canvas.height = 200;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return;
+
+		// Set up CSS Grid
+		pixelGrid.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
+		pixelGrid.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
+
+		// Wait for image to load
+		sourceImage.onload = () => {
+			// Draw image to canvas for color sampling
+			ctx.drawImage(sourceImage, 0, 0, 200, 200);
+
+			// Create pixel grid
+			createPixelGrid(ctx);
+		};
+
+		// If image is already loaded
+		if (sourceImage.complete) {
+			ctx.drawImage(sourceImage, 0, 0, 200, 200);
+			createPixelGrid(ctx);
+		}
+	}
+
+	function createPixelGrid(ctx: CanvasRenderingContext2D): void {
+		pixelGrid.innerHTML = '';
+		pixels = [];
+
+		for (let y = 0; y < gridHeight; y++) {
+			for (let x = 0; x < gridWidth; x++) {
+				const pixel = document.createElement('div');
+				pixel.className = 'pixel';
+
+				// Sample color from canvas
+				const sampleX = x * pixelSize + pixelSize / 2;
+				const sampleY = y * pixelSize + pixelSize / 2;
+				const imageData = ctx.getImageData(sampleX, sampleY, 1, 1);
+				const [r, g, b] = imageData.data;
+
+				// Store original RGB values before converting to grayscale
+				pixel.dataset.originalR = r.toString();
+				pixel.dataset.originalG = g.toString();
+				pixel.dataset.originalB = b.toString();
+				pixel.dataset.originalColor = `rgb(${r}, ${g}, ${b})`;
+
+				// Convert to grayscale using luminance formula
+				const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+				pixel.style.backgroundColor = `rgb(${gray}, ${gray}, ${gray})`;
+
+				// Store original gray value and position for hover effects
+				pixel.dataset.originalGray = gray.toString();
+				pixel.dataset.x = x.toString();
+				pixel.dataset.y = y.toString();
+				pixel.dataset.index = (y * gridWidth + x).toString();
+
+				// Add hover effect
+				addHoverEffect(pixel, x, y);
+
+				pixelGrid.appendChild(pixel);
+				pixels.push(pixel);
+			}
+		}
+	}
+
+	// Initialize when the page loads
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initializePixelGrid);
+	} else {
+		initializePixelGrid();
+	}
+</script> 
