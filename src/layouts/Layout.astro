@@ -1,23 +1,88 @@
+---
+import { Font } from "astro:assets";
+import LanguagePicker from "../components/LanguagePicker.astro";
+---
+
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Manuel Soto</title>
+    <Font cssVariable="--font-jetbrains-mono" preload />
+  </head>
+  <body>
+    <header>
+      <LanguagePicker />
+    </header>
+    <main class="content-wrapper">
+      <slot />
+    </main>
+  </body>
 </html>
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-		background-color: #111111
-	}
+<style is:global>
+  html,
+  body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #111111;
+    color: #fff;
+    font-family: var(--font-jetbrains-mono), monospace;
+    overflow-x: hidden;
+  }
+
+  header {
+    padding: clamp(0.5rem, 2vw, 1rem) clamp(1rem, 4vw, 2rem) 0;
+    display: flex;
+    justify-content: flex-end;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: rgba(17, 17, 17, 0.95);
+    backdrop-filter: blur(10px);
+  }
+
+  .content-wrapper {
+    width: 100%;
+    min-height: calc(100vh - 60px);
+    padding: clamp(1rem, 4vw, 2rem);
+    background-color: transparent;
+    display: flex;
+    box-sizing: border-box;
+    gap: clamp(1rem, 3vw, 1.5rem);
+  }
+
+  /* Mobile-specific adjustments */
+  @media (max-width: 768px) {
+    header {
+      padding: 0.75rem 1rem 0;
+    }
+    
+    .content-wrapper {
+      padding: 1rem;
+      min-height: calc(100vh - 50px);
+      align-items: flex-start;
+      padding-top: 2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    header {
+      padding: 0.5rem 0.75rem 0;
+    }
+    
+    .content-wrapper {
+      padding: 0.75rem;
+      padding-top: 1.5rem;
+    }
+  }
+
+  /* Ensure text doesn't overflow */
+  * {
+    box-sizing: border-box;
+  }
 </style>

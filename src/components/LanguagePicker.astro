@@ -1,0 +1,61 @@
+---
+import { languages, defaultLang } from '../i18n/ui';
+import { getRouteFromUrl, getLangFromUrl } from '../i18n/utils';
+
+const currentLang = getLangFromUrl(Astro.url);
+const route = getRouteFromUrl(Astro.url);
+---
+
+<nav class="language-picker" aria-label="Language selector">
+	{Object.entries(languages)
+		.filter(([lang, _]) => lang !== currentLang)
+		.map(([lang, label]) => {
+			const path = lang === defaultLang ? '' : `/${lang}`;
+			const href = route ? `${path}/${route}` : path || '/';
+			return (
+				<a href={href} class="language-link" aria-label={`Switch to ${label}`}>
+					{label}
+				</a>
+			);
+		})}
+</nav>
+
+<style>
+	.language-picker {
+		display: flex;
+		gap: clamp(0.5rem, 2vw, 1rem);
+		align-items: center;
+	}
+	
+	.language-link {
+		color: #fff;
+		text-decoration: none;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: clamp(0.8rem, 2vw, 1rem);
+		transition: all 0.2s ease;
+		border: 1px solid transparent;
+	}
+	
+	.language-link:hover {
+		background-color: rgba(255, 255, 255, 0.1);
+		border-color: rgba(255, 255, 255, 0.2);
+		transform: translateY(-1px);
+	}
+	
+	.language-link:focus {
+		outline: 2px solid rgba(255, 255, 255, 0.5);
+		outline-offset: 2px;
+	}
+
+	@media (max-width: 480px) {
+		.language-picker {
+			gap: 0.5rem;
+		}
+		
+		.language-link {
+			padding: 0.2rem 0.4rem;
+			font-size: 0.85rem;
+		}
+	}
+</style> 
