@@ -1,20 +1,99 @@
 ---
-import me from "../assets/me.jpg";
+import me from "../assets/gym_me_square.jpg";
 import PixelatedImage from "./PixelatedImage.astro";
 const { subtitle } = Astro.props;
 ---
 
 <section id="hero">
-  <PixelatedImage src={me.src} alt="Profile" />
+  <PixelatedImage
+    src={me.src}
+    alt="Profile"
+    width={250}
+    height={250}
+    gridSize={16}
+  />
   <div class="hero-content">
-    <h1>
-      {subtitle}
-    </h1>
-    <span class="scrambled">
-      {subtitle}
-    </span>
+    <div class="text-scramble__content">
+      <h1 id="scramble-text-original">
+        {subtitle}
+      </h1>
+      
+      <div class="text-scramble__text" aria-hidden="true">
+        <span id="scramble-text" class="scrambled"></span><span id="scramble-cursor" class="cursor">|</span>
+      </div>
+    </div>
   </div>
 </section>
+
+<script>
+  import gsap from "gsap";
+  import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
+  
+  gsap.registerPlugin(ScrambleTextPlugin);
+  
+  // Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const scrambleElement = document.querySelector("#scramble-text") as HTMLElement;
+    const cursorElement = document.querySelector("#scramble-cursor") as HTMLElement;
+    const originalElement = document.querySelector("#scramble-text-original") as HTMLElement;
+    
+    if (!scrambleElement || !cursorElement || !originalElement) return;
+    
+    // Get the actual subtitle text from the original element
+    const subtitleText = originalElement.textContent?.trim() || "";
+    
+    // Create timelines
+    const tl = gsap.timeline({
+      id: "text-scramble",
+      defaults: { ease: "none" }
+    });
+    
+    const cursorTl = gsap.timeline({ repeat: -1 });
+    
+    // Set initial states
+    gsap.set(originalElement, {
+      opacity: 0
+    });
+    
+    gsap.set(scrambleElement, {
+      opacity: 1
+    });
+    
+    // Clear initial content
+    scrambleElement.textContent = "";
+    
+    // Cursor blinking animation
+    cursorTl
+      .to(cursorElement, {
+        opacity: 0,
+        duration: 0.5,
+        ease: "none",
+        delay: 0.2
+      })
+      .to(cursorElement, {
+        opacity: 1,
+        duration: 0.5,
+        ease: "none",
+        delay: 0.2
+      });
+    
+    // Start cursor blinking immediately
+    cursorTl.play();
+    
+    // Scramble text animation
+    tl.to(scrambleElement, {
+      scrambleText: {
+        text: subtitleText,
+        chars: "lowerCase",
+        speed: 0.5
+      },
+      duration: 2
+    });
+    
+    // Start the animation
+    tl.play();
+  });
+</script>
 
 <style>
   #hero {
@@ -32,17 +111,36 @@ const { subtitle } = Astro.props;
     min-width: 0; /* Allow text to shrink */
   }
 
-  .hero-content h1 {
-    display: none;
-  }
-
-  .hero-content span {
+  .text-scramble__content {
+    position: relative;
     font-size: clamp(1.2rem, 4vw, 3.5rem);
     font-weight: lighter;
     line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .hero-content h1 {
+    display: none;
     margin: 0;
+  }
+
+  .text-scramble__text {
+    position: relative;
+    display: inline-block;
+  }
+
+  .text-scramble__text span.scrambled {
     word-wrap: break-word;
     overflow-wrap: break-word;
+    white-space: pre-wrap;
+  }
+
+  .cursor {
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: currentColor;
+    margin-left: 2px;
   }
 
   /* Mobile-first responsive design */
@@ -52,19 +150,19 @@ const { subtitle } = Astro.props;
       text-align: left;
       gap: 1.5rem;
     }
-    
+
     .hero-content {
       text-align: left;
     }
-    
-    .hero-content span {
+
+    .text-scramble__content {
       font-size: clamp(1rem, 6vw, 2rem);
       line-height: 1.3;
     }
   }
 
   @media (max-width: 480px) {
-    .hero-content span {
+    .text-scramble__content {
       font-size: clamp(0.9rem, 5vw, 1.5rem);
       line-height: 1.4;
     }

@@ -2,23 +2,23 @@
 export interface Props {
 	src: string;
 	alt: string;
+	width?: number;
+	height?: number;
+	gridSize?: number;
 }
 
-const { src, alt } = Astro.props;
+const { src, alt, width = 200, height = 200, gridSize = 16 } = Astro.props;
 ---
 
-<div class="image-container">
+<div class="image-container" style={`width: ${width}px; height: ${height}px;`}>
 	<img {src} {alt} class="hero-image" id="sourceImage" />
 	<canvas id="pixelCanvas"></canvas>
-	<div class="pixel-grid" id="pixelGrid"></div>
 </div>
 
 <style>
 	.image-container {
 		position: relative;
-		width: clamp(150px, 25vw, 200px);
-		height: clamp(150px, 25vw, 200px);
-		border-radius: clamp(10px, 2vw, 20px);
+		/* border-radius: clamp(10px, 2vw, 20px); */
 		box-shadow: 0 clamp(10px, 3vw, 20px) clamp(30px, 8vw, 60px) rgba(0, 0, 0, 0.5);
 		overflow: hidden;
 		flex-shrink: 0;
@@ -41,226 +41,242 @@ const { src, alt } = Astro.props;
 		width: 100%;
 		height: 100%;
 		z-index: 2;
-		opacity: 0;
-	}
-
-	.pixel-grid {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		z-index: 3;
-		display: grid;
-		gap: 1px;
-	}
-
-	.pixel {
-		background-color: #333;
-		transition: all 0.2s ease;
-		border-radius: 1px;
-		position: relative;
-		overflow: hidden;
+		cursor: pointer;
 	}
 
 	@media (max-width: 768px) {
 		.image-container {
-			width: clamp(120px, 30vw, 160px);
-			height: clamp(120px, 30vw, 160px);
+			width: clamp(120px, 30vw, 160px) !important;
+			height: clamp(120px, 30vw, 160px) !important;
 		}
 	}
 
 	@media (max-width: 480px) {
 		.image-container {
-			width: clamp(100px, 35vw, 140px);
-			height: clamp(100px, 35vw, 140px);
+			width: clamp(100px, 35vw, 140px) !important;
+			height: clamp(100px, 35vw, 140px) !important;
 		}
 	}
 </style>
 
-<script>
-	const container = document.querySelector('.image-container') as HTMLElement;
-	const sourceImage = document.getElementById('sourceImage') as HTMLImageElement;
-	const canvas = document.getElementById('pixelCanvas') as HTMLCanvasElement;
-	const pixelGrid = document.getElementById('pixelGrid') as HTMLElement;
-
-	let pixelSize = 12;
-	let gridWidth = 16;
-	let gridHeight = 16;
-	let pixels: HTMLElement[] = [];
-	let animationIntervals: Map<string, any> = new Map();
-
-	function updateGridSize(): void {
-		const containerWidth = container.offsetWidth;
-		const containerHeight = container.offsetHeight;
-		
-		// Adjust grid based on container size
-		if (containerWidth < 140) {
-			pixelSize = 8;
-			gridWidth = Math.floor(containerWidth / pixelSize);
-			gridHeight = Math.floor(containerHeight / pixelSize);
-		} else if (containerWidth < 180) {
-			pixelSize = 10;
-			gridWidth = Math.floor(containerWidth / pixelSize);
-			gridHeight = Math.floor(containerHeight / pixelSize);
-		} else {
-			pixelSize = 12;
-			gridWidth = 16;
-			gridHeight = 16;
+<script define:vars={{ gridSize }}>
+	class PixelatedCanvas {
+		constructor(container, sourceImage, canvas, gridSize) {
+			this.container = container;
+			this.sourceImage = sourceImage;
+			this.canvas = canvas;
+			this.ctx = canvas.getContext('2d');
+			this.gridSize = gridSize;
+			this.pixelData = [];
+			this.originalPixelData = [];
+			this.hoveredPixel = null;
+			this.animationFrame = null;
+			
+			this.init();
 		}
-	}
 
-	function getNeighbors(x: number, y: number): { x: number; y: number; distance: number }[] {
-		const neighbors: { x: number; y: number; distance: number }[] = [];
+		init() {
+			this.resizeCanvas();
+			this.addEventListeners();
+			
+			if (this.sourceImage.complete) {
+				this.processImage();
+			} else {
+				this.sourceImage.onload = () => this.processImage();
+			}
+		}
 
-		for (let dy = -1; dy <= 1; dy++) {
-			for (let dx = -1; dx <= 1; dx++) {
-				const nx = x + dx;
-				const ny = y + dy;
+		resizeCanvas() {
+			const rect = this.container.getBoundingClientRect();
+			this.canvas.width = rect.width;
+			this.canvas.height = rect.height;
+			this.pixelSize = Math.floor(Math.min(rect.width, rect.height) / this.gridSize);
+			this.actualGridWidth = Math.floor(rect.width / this.pixelSize);
+			this.actualGridHeight = Math.floor(rect.height / this.pixelSize);
+		}
 
-				if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight && !(dx === 0 && dy === 0)) {
-					const distance = Math.sqrt(dx * dx + dy * dy);
-					neighbors.push({ x: nx, y: ny, distance });
+		processImage() {
+			// Create a temporary canvas to sample the image
+			const tempCanvas = document.createElement('canvas');
+			const tempCtx = tempCanvas.getContext('2d');
+			tempCanvas.width = this.canvas.width;
+			tempCanvas.height = this.canvas.height;
+			
+			// Draw the source image to temp canvas
+			tempCtx.drawImage(this.sourceImage, 0, 0, tempCanvas.width, tempCanvas.height);
+			
+			// Sample pixels and store data
+			this.pixelData = [];
+			this.originalPixelData = [];
+			
+			for (let y = 0; y < this.actualGridHeight; y++) {
+				for (let x = 0; x < this.actualGridWidth; x++) {
+					const sampleX = x * this.pixelSize + this.pixelSize / 2;
+					const sampleY = y * this.pixelSize + this.pixelSize / 2;
+					
+					const imageData = tempCtx.getImageData(sampleX, sampleY, 1, 1);
+					const [r, g, b] = imageData.data;
+					
+					// Convert to grayscale
+					const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+					
+					const pixelInfo = {
+						x,
+						y,
+						originalR: r,
+						originalG: g,
+						originalB: b,
+						gray,
+						currentR: gray,
+						currentG: gray,
+						currentB: gray
+					};
+					
+					this.pixelData.push(pixelInfo);
+					this.originalPixelData.push({ ...pixelInfo });
 				}
 			}
+			
+			this.render();
 		}
 
-		return neighbors;
-	}
-
-	function addHoverEffect(pixel: HTMLElement, x: number, y: number): void {
-		let isHovering = false;
-
-		pixel.addEventListener('mouseenter', () => {
-			isHovering = true;
-			const neighbors = getNeighbors(x, y);
-			const animationKey = `${x}-${y}`;
-
-			pixel.style.backgroundColor = 'rgb(255, 255, 255)';
-
-			const neighborColors = neighbors.map(({ x: nx, y: ny }) => {
-				const neighborPixel = pixels[ny * gridWidth + nx];
-				return neighborPixel.dataset.originalColor || 'rgb(128, 128, 128)';
-			});
-
-			if (animationIntervals.has(animationKey)) {
-				window.clearInterval(animationIntervals.get(animationKey)!);
+		render() {
+			this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+			
+			for (const pixel of this.pixelData) {
+				this.ctx.fillStyle = `rgb(${pixel.currentR}, ${pixel.currentG}, ${pixel.currentB})`;
+				this.ctx.fillRect(
+					pixel.x * this.pixelSize,
+					pixel.y * this.pixelSize,
+					this.pixelSize - 1,
+					this.pixelSize - 1
+				);
 			}
+		}
 
-			const animateNeighbors = () => {
-				const shuffledColors = [...neighborColors].sort(() => Math.random() - 0.5);
+		getPixelFromCoords(mouseX, mouseY) {
+			const rect = this.canvas.getBoundingClientRect();
+			const x = Math.floor((mouseX - rect.left) / this.pixelSize);
+			const y = Math.floor((mouseY - rect.top) / this.pixelSize);
+			
+			if (x >= 0 && x < this.actualGridWidth && y >= 0 && y < this.actualGridHeight) {
+				return this.pixelData.find(p => p.x === x && p.y === y);
+			}
+			return null;
+		}
 
-				neighbors.forEach(({ x: nx, y: ny }, index) => {
-					const neighborPixel = pixels[ny * gridWidth + nx];
-					if (neighborPixel) {
-						neighborPixel.style.backgroundColor = shuffledColors[index];
+		getNeighbors(targetPixel) {
+			const neighbors = [];
+			const { x, y } = targetPixel;
+			
+			for (let dy = -1; dy <= 1; dy++) {
+				for (let dx = -1; dx <= 1; dx++) {
+					const nx = x + dx;
+					const ny = y + dy;
+					
+					if (nx >= 0 && nx < this.actualGridWidth && 
+						ny >= 0 && ny < this.actualGridHeight && 
+						!(dx === 0 && dy === 0)) {
+						
+						const neighbor = this.pixelData.find(p => p.x === nx && p.y === ny);
+						if (neighbor) {
+							neighbors.push(neighbor);
+						}
 					}
-				});
-			};
-
-			animateNeighbors();
-
-			const interval = window.setInterval(() => {
-				if (!isHovering) {
-					window.clearInterval(interval);
-					animationIntervals.delete(animationKey);
-					return;
 				}
-
-				animateNeighbors();
-			}, 100);
-
-			animationIntervals.set(animationKey, interval);
-		});
-
-		pixel.addEventListener('mouseleave', () => {
-			isHovering = false;
-			const neighbors = getNeighbors(x, y);
-
-			const originalGray = pixel.dataset.originalGray || '128';
-			pixel.style.backgroundColor = `rgb(${originalGray}, ${originalGray}, ${originalGray})`;
-
-			neighbors.forEach(({ x: nx, y: ny }) => {
-				const neighborPixel = pixels[ny * gridWidth + nx];
-				if (!neighborPixel) return;
-
-				const originalGray = neighborPixel.dataset.originalGray || '128';
-				neighborPixel.style.backgroundColor = `rgb(${originalGray}, ${originalGray}, ${originalGray})`;
-			});
-		});
-	}
-
-	function initializePixelGrid(): void {
-		if (!sourceImage || !canvas || !pixelGrid || !container) return;
-
-		updateGridSize();
-
-		canvas.width = container.offsetWidth;
-		canvas.height = container.offsetHeight;
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return;
-
-		pixelGrid.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
-		pixelGrid.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
-
-		sourceImage.onload = () => {
-			ctx.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
-			createPixelGrid(ctx);
-		};
-
-		if (sourceImage.complete) {
-			ctx.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
-			createPixelGrid(ctx);
-		}
-	}
-
-	function createPixelGrid(ctx: CanvasRenderingContext2D): void {
-		pixelGrid.innerHTML = '';
-		pixels = [];
-
-		for (let y = 0; y < gridHeight; y++) {
-			for (let x = 0; x < gridWidth; x++) {
-				const pixel = document.createElement('div');
-				pixel.className = 'pixel';
-
-				const sampleX = x * pixelSize + pixelSize / 2;
-				const sampleY = y * pixelSize + pixelSize / 2;
-				const imageData = ctx.getImageData(sampleX, sampleY, 1, 1);
-				const [r, g, b] = imageData.data;
-
-				pixel.dataset.originalR = r.toString();
-				pixel.dataset.originalG = g.toString();
-				pixel.dataset.originalB = b.toString();
-				pixel.dataset.originalColor = `rgb(${r}, ${g}, ${b})`;
-
-				const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-				pixel.style.backgroundColor = `rgb(${gray}, ${gray}, ${gray})`;
-
-				pixel.dataset.originalGray = gray.toString();
-				pixel.dataset.x = x.toString();
-				pixel.dataset.y = y.toString();
-				pixel.dataset.index = (y * gridWidth + x).toString();
-
-				addHoverEffect(pixel, x, y);
-
-				pixelGrid.appendChild(pixel);
-				pixels.push(pixel);
 			}
+			
+			return neighbors;
+		}
+
+		animateColors() {
+			if (!this.hoveredPixel) return;
+			
+			const neighbors = this.getNeighbors(this.hoveredPixel);
+			
+			// Set hovered pixel to white
+			this.hoveredPixel.currentR = 255;
+			this.hoveredPixel.currentG = 255;
+			this.hoveredPixel.currentB = 255;
+			
+			// Collect original colors from all neighbors
+			const originalColors = neighbors.map(neighbor => ({
+				r: neighbor.originalR,
+				g: neighbor.originalG,
+				b: neighbor.originalB
+			}));
+			
+			// Shuffle the colors array randomly
+			const shuffledColors = [...originalColors].sort(() => Math.random() - 0.5);
+			
+			// Assign shuffled colors to neighbors
+			neighbors.forEach((neighbor, index) => {
+				const shuffledColor = shuffledColors[index];
+				neighbor.currentR = shuffledColor.r;
+				neighbor.currentG = shuffledColor.g;
+				neighbor.currentB = shuffledColor.b;
+			});
+			
+			this.render();
+			
+			this.animationFrame = requestAnimationFrame(() => {
+				setTimeout(() => this.animateColors(), 300); // Increased from 100ms to 300ms for slower animation
+			});
+		}
+
+		resetPixelColors() {
+			for (const pixel of this.pixelData) {
+				pixel.currentR = pixel.gray;
+				pixel.currentG = pixel.gray;
+				pixel.currentB = pixel.gray;
+			}
+			this.render();
+		}
+
+		addEventListeners() {
+			this.canvas.addEventListener('mousemove', (e) => {
+				const pixel = this.getPixelFromCoords(e.clientX, e.clientY);
+				
+				if (pixel !== this.hoveredPixel) {
+					if (this.animationFrame) {
+						cancelAnimationFrame(this.animationFrame);
+						this.animationFrame = null;
+					}
+					
+					this.resetPixelColors();
+					this.hoveredPixel = pixel;
+					
+					if (this.hoveredPixel) {
+						this.animateColors();
+					}
+				}
+			});
+			
+			this.canvas.addEventListener('mouseleave', () => {
+				if (this.animationFrame) {
+					cancelAnimationFrame(this.animationFrame);
+					this.animationFrame = null;
+				}
+				
+				this.hoveredPixel = null;
+				this.resetPixelColors();
+			});
+			
+			window.addEventListener('resize', () => {
+				setTimeout(() => {
+					this.resizeCanvas();
+					this.processImage();
+				}, 100);
+			});
 		}
 	}
 
-	// Handle resize events
-	function handleResize(): void {
-		setTimeout(() => {
-			initializePixelGrid();
-		}, 100);
-	}
+	// Initialize the pixelated canvas
+	const container = document.querySelector('.image-container');
+	const sourceImage = document.getElementById('sourceImage');
+	const canvas = document.getElementById('pixelCanvas');
 
-	window.addEventListener('resize', handleResize);
-
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', initializePixelGrid);
-	} else {
-		initializePixelGrid();
+	if (container && sourceImage && canvas) {
+		new PixelatedCanvas(container, sourceImage, canvas, gridSize);
 	}
 </script> 
