@@ -1,0 +1,122 @@
+---
+// Footer component that aligns with Hero's second column
+const { connectText } = Astro.props;
+---
+
+<footer>
+  <div class="footer-content">
+    <div class="footer-section">
+      <h3>{connectText}</h3>
+      <nav class="social-links">
+        <a
+          href="https://www.instagram.com/sotoj7_"
+          target="_blank"
+          rel="noopener noreferrer">INSTAGRAM</a
+        >
+        <a
+          href="www.linkedin.com/in/josé-soto-77a087248"
+          target="_blank"
+          rel="noopener noreferrer">LINKEDIN</a
+        >
+        <a
+          href="https://www.youtube.com/@ManuelRevo"
+          target="_blank"
+          rel="noopener noreferrer">YOUTUBE</a
+        >
+        <a
+          href="https://www.threads.net/@sotoj7_"
+          target="_blank"
+          rel="noopener noreferrer">THREADS</a
+        >
+        <a
+          href="https://www.figma.com/@sotoj7_"
+          target="_blank"
+          rel="noopener noreferrer">FIGMA</a
+        >
+        <a
+          href="https://x.com/sotoj7_"
+          target="_blank"
+          rel="noopener noreferrer">X</a
+        >
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<style>
+  footer {
+    background-color: #111111;
+    /* border-top: 1px solid #333; */
+    padding: clamp(2rem, 4vw, 3rem) clamp(1rem, 4vw, 2rem);
+    margin-top: auto;
+  }
+
+  .footer-content {
+    width: 100%;
+    display: flex;
+    /* Align with hero layout: image width + gap + content */
+    padding-left: calc(250px + clamp(1rem, 4vw, 2rem));
+  }
+
+  .footer-section h3 {
+    font-size: 0.9rem;
+    font-weight: normal;
+    letter-spacing: 0.1em;
+    margin: 0 0 1.5rem 0;
+    color: #888;
+    text-transform: uppercase;
+  }
+
+  .social-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .social-links a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: normal;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+    display: block;
+  }
+
+  .social-links a:hover {
+    color: #ccc;
+  }
+
+  .social-links a::before {
+    content: "→";
+    margin-right: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .social-links a:hover::before {
+    opacity: 1;
+  }
+
+  /* Mobile adjustments - stack vertically on mobile like hero */
+  @media (max-width: 768px) {
+    footer {
+      padding: 1.5rem 1rem;
+    }
+
+    .footer-content {
+      padding-left: 0;
+    }
+
+    .social-links {
+      gap: 0.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    footer {
+      padding: 1rem 0.75rem;
+    }
+  }
+</style>

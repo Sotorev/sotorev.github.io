@@ -10,10 +10,12 @@ export const ui = {
 		'hero.subtitle': "CRAFTING DIGITAL EXPERIENCES THROUGH CODE, DESIGN, AND STRATEGY. BUILDING MODERN APPLICATIONS THAT CONNECT, ENGAGE, AND INSPIRE.",
 		'nav.home': 'Home',
 		'nav.about': 'About',
+		'footer.connect': 'CONNECT',
 	},
 	es: {
 		'hero.subtitle': 'CREANDO EXPERIENCIAS DIGITALES A TRAVÉS DE CÓDIGO, DISEÑO Y ESTRATEGIA. DESARROLLANDO APLICACIONES MODERNAS QUE CONECTAN, INVOLUCRAN E INSPIRAN.',
 		'nav.home': 'Inicio',
 		'nav.about': 'Sobre mí',
+		'footer.connect': 'CONECTAR',
 	},
 } as const; 
