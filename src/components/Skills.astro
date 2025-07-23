@@ -1,0 +1,218 @@
+---
+const { t } = Astro.props;
+---
+
+<section id="skills">
+  <div class="skills-background">
+    <span class="skills-text">SKILLS</span>
+  </div>
+  
+  <div class="skills-content">
+    <div class="skills-header">
+      <h2>{t('skills.title')}</h2>
+    </div>
+    
+    <div class="skills-grid">
+      <div class="skill-category">
+        <h3>{t('skills.development')}</h3>
+        <div class="skill-list">
+          <span>Next.js</span>
+          <span>/</span>
+          <span>React</span>
+          <span>/</span>
+          <span>HTML / CSS / Tailwind</span>
+          <span>/</span>
+          <span>Python</span>
+          <span>/</span>
+          <span>C#</span>
+          <span>/</span>
+          <span>JavaScript / Bun / Node.js</span>
+          <span>/</span>
+          <span>TypeScript</span>
+          <span>/</span>
+		  <span>Astro</span>
+		  <span>/</span>
+          <span>SQL / PostgreSQL / MySQL</span>
+		  <span>/</span>
+		  <span>MongoDB</span>
+          <span>/</span>
+          <span>Git</span>
+          <span>/</span>
+          <span>Docker</span>
+          <span>/</span>
+        </div>
+      </div>
+      
+      <div class="skill-category">
+        <h3>{t('skills.cms')}</h3>
+        <div class="skill-list">
+          <span>WordPress</span>
+          <span>/</span>
+          <span>Shopify</span>
+        </div>
+      </div>
+      
+      <div class="skill-category">
+        <h3>{t('skills.design')}</h3>
+        <div class="skill-list">
+          <span>Figma</span>
+          <span>/</span>
+          <span>Photoshop</span>
+          <span>/</span>
+          <span>Illustrator</span>
+        </div>
+      </div>
+      
+      <div class="skill-category">
+        <h3>{t('skills.admin')}</h3>
+        <div class="skill-list">
+          <span>GitHub</span>
+          <span>/</span>
+          <span>Trello</span>
+          <span>/</span>
+          <span>Asana</span>
+          <span>/</span>
+          <span>Jira</span>
+          <span>/</span>
+          <span>Acrobat</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  #skills {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    padding: clamp(2rem, 8vw, 4rem) 0;
+    overflow: hidden;
+  }
+
+  .skills-background {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    opacity: 0.05;
+    pointer-events: none;
+  }
+
+  .skills-text {
+    font-size: clamp(8rem, 25vw, 20rem);
+    font-weight: bold;
+    color: #fff;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .skills-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    /* Align with hero layout: image width + gap + content */
+    padding-left: calc(250px + clamp(1rem, 4vw, 2rem));
+    padding-right: clamp(1rem, 4vw, 2rem);
+  }
+
+  .skills-header {
+    margin-bottom: clamp(2rem, 6vw, 3rem);
+  }
+
+  .skills-header h2 {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-weight: normal;
+    color: #fff;
+    margin: 0;
+    letter-spacing: 0.1em;
+    border: 1px solid #333;
+    padding: 0.5rem 1rem;
+    display: inline-block;
+    background-color: rgba(17, 17, 17, 0.8);
+  }
+
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: clamp(1.5rem, 4vw, 2.5rem);
+    align-items: start;
+  }
+
+  .skill-category {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .skill-category h3 {
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
+    font-weight: normal;
+    color: #fff;
+    margin: 0 0 1rem 0;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid #333;
+    padding-bottom: 0.5rem;
+  }
+
+  .skill-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    line-height: 1.6;
+  }
+
+  .skill-list span {
+    font-size: clamp(0.75rem, 1.8vw, 0.85rem);
+    color: #ccc;
+    font-family: inherit;
+  }
+
+  .skill-list span:not(:nth-child(even)) {
+    /* Skills (not separators) */
+    transition: color 0.3s ease;
+  }
+
+  .skill-list span:not(:nth-child(even)):hover {
+    color: #fff;
+  }
+
+  .skill-list span:nth-child(even) {
+    /* Separators */
+    color: #666;
+    font-weight: normal;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .skills-content {
+      padding-left: clamp(1rem, 4vw, 2rem);
+    }
+    
+    .skills-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    
+    .skills-text {
+      font-size: clamp(6rem, 30vw, 12rem);
+    }
+  }
+
+  @media (max-width: 480px) {
+    #skills {
+      padding: 2rem 0;
+    }
+    
+    .skills-content {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    .skill-list {
+      gap: 0.3rem;
+    }
+  }
+</style> 

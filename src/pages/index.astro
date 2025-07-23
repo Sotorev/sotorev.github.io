@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Hero from '../components/Hero.astro';
+import Skills from '../components/Skills.astro';
 import { useTranslations } from '../i18n/utils';
 
 const t = useTranslations('en');
@@ -8,4 +9,5 @@ const t = useTranslations('en');
 
 <Layout title="Manuel Soto" connectText={t('footer.connect')}>
 	<Hero subtitle={t('hero.subtitle')} />
+	<Skills t={t} />
 </Layout>
