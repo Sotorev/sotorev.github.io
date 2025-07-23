@@ -14,12 +14,12 @@ const { subtitle } = Astro.props;
   />
   <div class="hero-content">
     <div class="text-scramble__content">
-      <h1 id="scramble-text-original">
+      <h1 id="scramble-text-original" style="display: none;">
         {subtitle}
       </h1>
       
       <div class="text-scramble__text" aria-hidden="true">
-        <span id="scramble-text" class="scrambled"></span><span id="scramble-cursor" class="cursor">|</span>
+        <span id="scramble-text" class="scrambled">{subtitle}</span>
       </div>
     </div>
   </div>
@@ -31,67 +31,36 @@ const { subtitle } = Astro.props;
   
   gsap.registerPlugin(ScrambleTextPlugin);
   
+  // Scramble animation function
+  function createScrambleAnimation(element: HTMLElement, originalText: string) {
+    return gsap.to(element, {
+      scrambleText: {
+        text: originalText,
+        chars: "lowerCase",
+        speed: 1,
+        revealDelay: 0,
+        tweenLength: false
+      },
+      duration: 0.8,
+      ease: "none"
+    });
+  }
+  
   // Wait for DOM to be ready
   document.addEventListener('DOMContentLoaded', () => {
     const scrambleElement = document.querySelector("#scramble-text") as HTMLElement;
-    const cursorElement = document.querySelector("#scramble-cursor") as HTMLElement;
     const originalElement = document.querySelector("#scramble-text-original") as HTMLElement;
     
-    if (!scrambleElement || !cursorElement || !originalElement) return;
+    if (!scrambleElement || !originalElement) return;
     
     // Get the actual subtitle text from the original element
     const subtitleText = originalElement.textContent?.trim() || "";
     
-    // Create timelines
-    const tl = gsap.timeline({
-      id: "text-scramble",
-      defaults: { ease: "none" }
-    });
-    
-    const cursorTl = gsap.timeline({ repeat: -1 });
-    
-    // Set initial states
-    gsap.set(originalElement, {
-      opacity: 0
-    });
-    
-    gsap.set(scrambleElement, {
-      opacity: 1
-    });
-    
-    // Clear initial content
-    scrambleElement.textContent = "";
-    
-    // Cursor blinking animation
-    cursorTl
-      .to(cursorElement, {
-        opacity: 0,
-        duration: 0.5,
-        ease: "none",
-        delay: 0.2
-      })
-      .to(cursorElement, {
-        opacity: 1,
-        duration: 0.5,
-        ease: "none",
-        delay: 0.2
-      });
-    
-    // Start cursor blinking immediately
-    cursorTl.play();
-    
-    // Scramble text animation
-    tl.to(scrambleElement, {
-      scrambleText: {
-        text: subtitleText,
-        chars: "lowerCase",
-        speed: 0.5
-      },
-      duration: 2
-    });
-    
-    // Start the animation
-    tl.play();
+    // Initial scramble animation - synchronized with other components
+    setTimeout(() => {
+      createScrambleAnimation(scrambleElement, subtitleText);
+      // No periodic scrambling for hero
+    }, 500);
   });
 </script>
 
@@ -133,14 +102,6 @@ const { subtitle } = Astro.props;
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
-  }
-
-  .cursor {
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    color: currentColor;
-    margin-left: 2px;
   }
 
   /* Mobile-first responsive design */

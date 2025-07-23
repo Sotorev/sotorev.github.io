@@ -9,84 +9,135 @@ const { t } = Astro.props;
   
   <div class="skills-content">
     <div class="skills-header">
-      <h2>{t('skills.title')}</h2>
+      <h2 class="scramble-text" data-original={t('skills.title')}>{t('skills.title')}</h2>
     </div>
     
     <div class="skills-grid">
       <div class="skill-category">
-        <h3>{t('skills.development')}</h3>
+        <h3 class="scramble-text" data-original={t('skills.development')}>{t('skills.development')}</h3>
         <div class="skill-list">
-          <span>Next.js</span>
+          <span class="scramble-text" data-original="Next.js">Next.js</span>
           <span>/</span>
-          <span>React</span>
+          <span class="scramble-text" data-original="React">React</span>
           <span>/</span>
-          <span>HTML / CSS / Tailwind</span>
+          <span class="scramble-text" data-original="HTML / CSS / Tailwind">HTML / CSS / Tailwind</span>
           <span>/</span>
-          <span>Python</span>
+          <span class="scramble-text" data-original="Python">Python</span>
           <span>/</span>
-          <span>C#</span>
+          <span class="scramble-text" data-original="C#">C#</span>
           <span>/</span>
-          <span>JavaScript / Bun / Node.js</span>
+          <span class="scramble-text" data-original="JavaScript / Bun / Node.js">JavaScript / Bun / Node.js</span>
           <span>/</span>
-          <span>TypeScript</span>
+          <span class="scramble-text" data-original="TypeScript">TypeScript</span>
           <span>/</span>
-		  <span>Astro</span>
+		  <span class="scramble-text" data-original="Astro">Astro</span>
 		  <span>/</span>
-          <span>SQL / PostgreSQL / MySQL</span>
+          <span class="scramble-text" data-original="SQL / PostgreSQL / MySQL">SQL / PostgreSQL / MySQL</span>
 		  <span>/</span>
-		  <span>MongoDB</span>
+		  <span class="scramble-text" data-original="MongoDB">MongoDB</span>
           <span>/</span>
-          <span>Git</span>
+          <span class="scramble-text" data-original="Git">Git</span>
           <span>/</span>
-          <span>Docker</span>
+          <span class="scramble-text" data-original="Docker">Docker</span>
           <span>/</span>
         </div>
       </div>
       
       <div class="skill-category">
-        <h3>{t('skills.cms')}</h3>
+        <h3 class="scramble-text" data-original={t('skills.cms')}>{t('skills.cms')}</h3>
         <div class="skill-list">
-          <span>WordPress</span>
+          <span class="scramble-text" data-original="WordPress">WordPress</span>
           <span>/</span>
-          <span>Shopify</span>
+          <span class="scramble-text" data-original="Shopify">Shopify</span>
         </div>
       </div>
       
       <div class="skill-category">
-        <h3>{t('skills.design')}</h3>
+        <h3 class="scramble-text" data-original={t('skills.design')}>{t('skills.design')}</h3>
         <div class="skill-list">
-          <span>Figma</span>
+          <span class="scramble-text" data-original="Figma">Figma</span>
           <span>/</span>
-          <span>Photoshop</span>
+          <span class="scramble-text" data-original="Photoshop">Photoshop</span>
           <span>/</span>
-          <span>Illustrator</span>
+          <span class="scramble-text" data-original="Illustrator">Illustrator</span>
         </div>
       </div>
       
       <div class="skill-category">
-        <h3>{t('skills.admin')}</h3>
+        <h3 class="scramble-text" data-original={t('skills.admin')}>{t('skills.admin')}</h3>
         <div class="skill-list">
-          <span>GitHub</span>
+          <span class="scramble-text" data-original="GitHub">GitHub</span>
           <span>/</span>
-          <span>Trello</span>
+          <span class="scramble-text" data-original="Trello">Trello</span>
           <span>/</span>
-          <span>Asana</span>
+          <span class="scramble-text" data-original="Asana">Asana</span>
           <span>/</span>
-          <span>Jira</span>
+          <span class="scramble-text" data-original="Jira">Jira</span>
           <span>/</span>
-          <span>Acrobat</span>
+          <span class="scramble-text" data-original="Acrobat">Acrobat</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
+<script>
+  import gsap from "gsap";
+  import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
+  
+  gsap.registerPlugin(ScrambleTextPlugin);
+  
+  // Scramble animation function
+  function createScrambleAnimation(element: HTMLElement, originalText: string) {
+    return gsap.to(element, {
+      scrambleText: {
+        text: originalText,
+        chars: "lowerCase",
+        speed: 1,
+        revealDelay: 0,
+        tweenLength: false
+      },
+      duration: 0.8,
+      ease: "none"
+    });
+  }
+  
+  // Random scramble function
+  function randomScramble(element: HTMLElement, originalText: string) {
+    // Random delay between 5-12 seconds for skills elements
+    const delay = Math.random() * 7000 + 5000;
+    
+    setTimeout(() => {
+      createScrambleAnimation(element, originalText).then(() => {
+        randomScramble(element, originalText); // Schedule next scramble
+      });
+    }, delay);
+  }
+  
+  // Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const scrambleElements = document.querySelectorAll('#skills .scramble-text') as NodeListOf<HTMLElement>;
+    
+    scrambleElements.forEach((element, index) => {
+      const originalText = element.getAttribute('data-original') || element.textContent?.trim() || "";
+      
+      // Initial animation synchronized with all components
+      setTimeout(() => {
+        createScrambleAnimation(element, originalText).then(() => {
+          // Start periodic random scrambling
+          randomScramble(element, originalText);
+        });
+      }, 500); // Same timing as Hero component
+    });
+  });
+</script>
+
 <style>
   #skills {
     position: relative;
     width: 100%;
     min-height: 100vh;
-    padding: clamp(2rem, 8vw, 4rem) 0;
+    padding: clamp(2rem, 8vw, 4rem) 0 clamp(1rem, 3vw, 2rem) 0;
     overflow: hidden;
   }
 

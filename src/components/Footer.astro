@@ -6,56 +6,198 @@ const { connectText } = Astro.props;
 <footer>
   <div class="footer-content">
     <div class="footer-section">
-      <h3>{connectText}</h3>
+      <h3 class="scramble-text" data-original={connectText}>{connectText}</h3>
       <nav class="social-links">
         <a
           href="https://www.instagram.com/sotoj7_"
           target="_blank"
-          rel="noopener noreferrer">INSTAGRAM</a
+          rel="noopener noreferrer"
+          class="scramble-text"
+          data-original="INSTAGRAM">INSTAGRAM</a
         >
         <a
           href="www.linkedin.com/in/josé-soto-77a087248"
           target="_blank"
-          rel="noopener noreferrer">LINKEDIN</a
+          rel="noopener noreferrer"
+          class="scramble-text"
+          data-original="LINKEDIN">LINKEDIN</a
         >
         <a
           href="https://www.youtube.com/@ManuelRevo"
           target="_blank"
-          rel="noopener noreferrer">YOUTUBE</a
+          rel="noopener noreferrer"
+          class="scramble-text"
+          data-original="YOUTUBE">YOUTUBE</a
         >
         <a
           href="https://www.threads.net/@sotoj7_"
           target="_blank"
-          rel="noopener noreferrer">THREADS</a
+          rel="noopener noreferrer"
+          class="scramble-text"
+          data-original="THREADS">THREADS</a
         >
         <a
           href="https://www.figma.com/@sotoj7_"
           target="_blank"
-          rel="noopener noreferrer">FIGMA</a
+          rel="noopener noreferrer"
+          class="scramble-text"
+          data-original="FIGMA">FIGMA</a
         >
         <a
           href="https://x.com/sotoj7_"
           target="_blank"
-          rel="noopener noreferrer">X</a
+          rel="noopener noreferrer"
+          class="scramble-text"
+          data-original="X">X</a
         >
       </nav>
+    </div>
+    
+    <div class="footer-info">
+      <div class="profile-section">
+        <!-- <img src="/src/assets/me.png" alt="Manrev" class="profile-image" /> -->
+        <div class="info-text">
+          <div class="current-time" id="current-time"></div>
+          <div class="copyright">© <span id="current-year"></span> Manrev. All rights reserved.</div>
+        </div>
+      </div>
     </div>
   </div>
 </footer>
 
+<script>
+  import gsap from "gsap";
+  import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
+  
+  gsap.registerPlugin(ScrambleTextPlugin);
+  
+  // Scramble animation function
+  function createScrambleAnimation(element: HTMLElement, originalText: string) {
+    return gsap.to(element, {
+      scrambleText: {
+        text: originalText,
+        chars: "lowerCase",
+        speed: 1,
+        revealDelay: 0,
+        tweenLength: false
+      },
+      duration: 0.8,
+      ease: "none"
+    });
+  }
+  
+  // Random scramble function
+  function randomScramble(element: HTMLElement, originalText: string) {
+    // Random delay between 4-10 seconds for footer elements
+    const delay = Math.random() * 6000 + 4000;
+    
+    setTimeout(() => {
+      createScrambleAnimation(element, originalText).then(() => {
+        randomScramble(element, originalText); // Schedule next scramble
+      });
+    }, delay);
+  }
+  
+  // Update current time and year
+  function updateTime() {
+    const now = new Date();
+    const timeElement = document.getElementById('current-time');
+    const yearElement = document.getElementById('current-year');
+    
+    if (timeElement) {
+      const timeString = now.toLocaleTimeString('en-US', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      const dateString = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      timeElement.textContent = `${dateString} ${timeString}`;
+    }
+    
+    if (yearElement) {
+      yearElement.textContent = now.getFullYear().toString();
+    }
+  }
+
+  // Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const scrambleElements = document.querySelectorAll('footer .scramble-text') as NodeListOf<HTMLElement>;
+    
+    scrambleElements.forEach((element, index) => {
+      const originalText = element.getAttribute('data-original') || element.textContent?.trim() || "";
+      
+      // Initial animation synchronized with all components
+      setTimeout(() => {
+        createScrambleAnimation(element, originalText).then(() => {
+          // Start periodic random scrambling
+          randomScramble(element, originalText);
+        });
+      }, 500); // Same timing as Hero component
+    });
+
+    // Initialize time and update every second
+    updateTime();
+    setInterval(updateTime, 1000);
+  });
+</script>
+
 <style>
   footer {
     background-color: #111111;
-    /* border-top: 1px solid #333; */
-    padding: clamp(2rem, 4vw, 3rem) clamp(1rem, 4vw, 2rem);
+    border-top: 1px solid #333;
+    padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 4vw, 2rem);
     margin-top: auto;
   }
 
   .footer-content {
     width: 100%;
     display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     /* Align with hero layout: image width + gap + content */
     padding-left: calc(250px + clamp(1rem, 4vw, 2rem));
+  }
+
+  .footer-info {
+    flex-shrink: 0;
+  }
+
+  .profile-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .profile-image {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #333;
+  }
+
+  .info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .current-time {
+    font-size: 0.75rem;
+    color: #888;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .copyright {
+    font-size: 0.75rem;
+    color: #666;
+    letter-spacing: 0.05em;
   }
 
   .footer-section h3 {
@@ -107,6 +249,22 @@ const { connectText } = Astro.props;
 
     .footer-content {
       padding-left: 0;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .footer-info {
+      order: -1;
+      align-self: flex-start;
+    }
+
+    .profile-section {
+      gap: 0.75rem;
+    }
+
+    .profile-image {
+      width: 40px;
+      height: 40px;
     }
 
     .social-links {
@@ -117,6 +275,15 @@ const { connectText } = Astro.props;
   @media (max-width: 480px) {
     footer {
       padding: 1rem 0.75rem;
+    }
+
+    .footer-content {
+      gap: 1.5rem;
+    }
+
+    .profile-image {
+      width: 36px;
+      height: 36px;
     }
   }
 </style>
